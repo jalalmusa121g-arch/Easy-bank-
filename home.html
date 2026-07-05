@@ -1,0 +1,207 @@
+<!DOCTYPE html><html>
+<head>
+    <title>Easy Bank</title>
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background: #f2f2f2;
+        }
+        h1 {
+            text-align: center;
+        }
+        .card {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: green;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #balance {
+            font-size: 24px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body><h1>Easy Bank</h1><!-- LOGIN / SIGNUP --><div class="card" id="auth">
+    <h3>Login / Signup</h3>
+    <input id="userEmail" placeholder="Enter Email">
+    <input id="userPass" placeholder="Enter Password" type="password">
+    <button onclick="signup()">Signup</button>
+    <button onclick="login()">Login</button>
+</div><!-- BANK APP --><div id="app" style="display:none;"><div class="card">
+    <h3>Account Balance</h3>
+    <div id="balance">₦0</div>
+</div><div class="card">
+    <h3>Deposit Money</h3>
+    <input id="email" placeholder="Enter your email">
+    <input id="depositAmount" placeholder="Enter amount">
+    <button onclick="deposit()">Deposit</button>
+</div><div class="card">
+    <h3>Transfer Money</h3>
+    <input id="receiver" placeholder="Receiver Name">
+    <input id="transferAmount" placeholder="Enter amount">
+    <button onclick="sendMoney()">Send</button>
+</div><div class="card">
+    <h3>Buy Airtime/Data</h3>
+    <input id="buyAmount" placeholder="Enter amount">
+    <button onclick="buy()">Buy</button>
+</div><div class="card">
+    <h3>Transaction History</h3>
+    <div id="history"></div>
+</div><button onclick="logout()">Logout</button>
+
+</div><script>
+// USER SYSTEM
+let currentUser = localStorage.getItem("currentUser");
+
+if (currentUser) {
+    showApp();
+}
+
+function signup() {
+    let email = document.getElementById("userEmail").value;
+    let pass = document.getElementById("userPass").value;
+
+    if (email === "" || pass === "") {
+        alert("Fill all fields");
+        return;
+    }
+
+    localStorage.setItem(email, JSON.stringify({
+        password: pass,
+        balance: 0,
+        history: ""
+    }));
+
+    alert("Signup successful! Now login");
+}
+
+function login() {
+    let email = document.getElementById("userEmail").value;
+    let pass = document.getElementById("userPass").value;
+
+    let user = JSON.parse(localStorage.getItem(email));
+
+    if (!user || user.password !== pass) {
+        alert("Invalid login");
+        return;
+    }
+
+    localStorage.setItem("currentUser", email);
+    showApp();
+}
+
+function logout() {
+    localStorage.removeItem("currentUser");
+    location.reload();
+}
+
+function showApp() {
+    document.getElementById("auth").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    loadUserData();
+}
+
+// BANK SYSTEM
+let balance = 0;
+
+function loadUserData() {
+    let user = JSON.parse(localStorage.getItem(currentUser));
+    balance = user.balance;
+    document.getElementById("balance").innerText = "₦" + balance;
+    document.getElementById("history").innerHTML = user.history || "";
+}
+
+function saveUserData(historyText="") {
+    let user = JSON.parse(localStorage.getItem(currentUser));
+    user.balance = balance;
+    if (historyText) {
+        user.history += "<p>" + historyText + "</p>";
+    }
+    localStorage.setItem(currentUser, JSON.stringify(user));
+    loadUserData();
+}
+
+// PAYSTACK
+function deposit() {
+    let email = document.getElementById("email").value;
+    let amount = document.getElementById("depositAmount").value;
+
+    if (email === "" || amount === "") {
+        alert("Enter email and amount");
+        return;
+    }
+
+    let handler = PaystackPop.setup({
+        key: "pk_test_98b033e4d1b5a6c4916c474c41f6c68e1e6a07b6",
+        email: email,
+        amount: amount * 100,
+        currency: "NGN",
+
+        callback: function(response) {
+            balance += parseInt(amount);
+            saveUserData("Deposited ₦" + amount);
+            alert("Payment successful!");
+        },
+
+        onClose: function() {
+            alert("Transaction cancelled");
+        }
+    });
+
+    handler.openIframe();
+}
+
+// TRANSFER
+function sendMoney() {
+    let name = document.getElementById("receiver").value;
+    let amount = document.getElementById("transferAmount").value;
+
+    if (name === "" || amount === "") {
+        alert("Fill all fields");
+        return;
+    }
+
+    if (parseInt(amount) > balance) {
+        alert("Insufficient balance");
+        return;
+    }
+
+    balance -= parseInt(amount);
+    saveUserData("Sent ₦" + amount + " to " + name);
+}
+
+// BUY
+function buy() {
+    let amount = document.getElementById("buyAmount").value;
+
+    if (amount === "") {
+        alert("Enter amount");
+        return;
+    }
+
+    if (parseInt(amount) > balance) {
+        alert("Insufficient balance");
+        return;
+    }
+
+    balance -= parseInt(amount);
+    saveUserData("Bought Airtime ₦" + amount);
+}
+</script></body>
+</html>
