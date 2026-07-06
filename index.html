@@ -1,75 +1,151 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Easy Bank</title>
-
-<style>
-body {
-    font-family: Arial;
-    margin: 0;
-    background: #0f172a;
-    color: white;
-}
-
-header {
-    background: #020617;
-    padding: 15px;
-    text-align: center;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.container {
-    padding: 20px;
-}
-
-.card {
-    background: #1e293b;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 15px;
-}
-
-button {
-    width: 100%;
-    padding: 15px;
-    border: none;
-    border-radius: 10px;
-    background: #22c55e;
-    color: white;
-    font-size: 16px;
-    margin-top: 10px;
-}
-
-input {
-    width: 100%;
-    padding: 12px;
-    margin-top: 10px;
-    border-radius: 8px;
-    border: none;
-}
-
-.balance {
-    font-size: 30px;
-    font-weight: bold;
-}
-
-</style>
+    <title>Easy Bank</title>
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background: #f2f2f2;
+        }
+        h1 {
+            text-align: center;
+        }
+        .card {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: green;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #balance {
+            font-size: 24px;
+            font-weight: bold;
+        }
+    </style>
 </head>
+<body><h1>Easy Bank</h1><div class="card">
+    <h3>Account Balance</h3>
+    <div id="balance">₦0</div>
+</div><div class="card">
+    <h3>Deposit Money</h3>
+    <input id="email" placeholder="Enter your email">
+    <input id="depositAmount" placeholder="Enter amount">
+    <button onclick="deposit()">Deposit</button>
+</div><div class="card">
+    <h3>Transfer Money</h3>
+    <input id="receiver" placeholder="Receiver Name">
+    <input id="transferAmount" placeholder="Enter amount">
+    <button onclick="sendMoney()">Send</button>
+</div><div class="card">
+    <h3>Buy Airtime/Data</h3>
+    <input id="buyAmount" placeholder="Enter amount">
+    <button onclick="buy()">Buy</button>
+</div><div class="card">
+    <h3>Transaction History</h3>
+    <div id="history"></div>
+</div><script>
+let balance = localStorage.getItem("balance") || 0;
+balance = parseInt(balance);
 
-<body>
+function updateBalance() {
+    document.getElementById("balance").innerText = "₦" + balance;
+    localStorage.setItem("balance", balance);
+}
 
-<header>
-🏦 Easy Bank
-</header>
+updateBalance();
 
-<div class="container">
+// ✅ PAYSTACK DEPOSIT WITH EMAIL
+function deposit() {
+    let email = document.getElementById("email").value;
+    let amount = document.getElementById("depositAmount").value;
 
-<div class="card">
-<h3>Your Balance</h3>
-<p class="balance">₦<span id="balance">0</span></p>
-</div>
+    if (email === "" || amount === "") {
+        alert("Enter email and amount");
+        return;
+    }
 
-<div
+    let handler = PaystackPop.setup({
+        key: "pk_test_98b033e4d1b5a6c4916c474c41f6c68e1e6a07b6",
+        email: email,
+        amount: amount * 100,
+        currency: "NGN",
+
+        callback: function(response) {
+            balance += parseInt(amount);
+            updateBalance();
+            saveHistory("Deposited ₦" + amount + " (Paystack)");
+            alert("Payment successful!");
+        },
+
+        onClose: function() {
+            alert("Transaction cancelled");
+        }
+    });
+
+    handler.openIframe();
+}
+
+// Transfer
+function sendMoney() {
+    let name = document.getElementById("receiver").value;
+    let amount = document.getElementById("transferAmount").value;
+
+    if (name === "" || amount === "") {
+        alert("Fill all fields");
+        return;
+    }
+
+    if (parseInt(amount) > balance) {
+        alert("Insufficient balance");
+        return;
+    }
+
+    balance -= parseInt(amount);
+    updateBalance();
+    saveHistory("Sent ₦" + amount + " to " + name);
+}
+
+// Buy Airtime/Data
+function buy() {
+    let amount = document.getElementById("buyAmount").value;
+
+    if (amount === "") {
+        alert("Enter amount");
+        return;
+    }
+
+    if (parseInt(amount) > balance) {
+        alert("Insufficient balance");
+        return;
+    }
+
+    balance -= parseInt(amount);
+    updateBalance();
+    saveHistory("Bought Airtime ₦" + amount);
+}
+
+// History
+function saveHistory(text) {
+    let history = localStorage.getItem("history") || "";
+    history += "<p>" + text + "</p>";
+    localStorage.setItem("history", history);
+    document.getElementById("history").innerHTML = history;
+}
+
+document.getElementById("history").innerHTML = localStorage.getItem("history") || "";
+</script></body>
+</html>
